@@ -22,14 +22,24 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#0f1923;
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-text{color:#8899aa;margin-top:16px;font-size:14px}
 .last-updated{font-size:12px;color:#556677;text-align:center;padding:10px}
+.date-filter-bar{display:flex;align-items:center;gap:16px;padding:16px 40px;background:#152232;border-bottom:1px solid #253545;flex-wrap:wrap}
+.date-filter-bar label{font-size:13px;color:#8899aa;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.date-filter-bar select{background:#1a2a3a;color:#fff;border:1px solid #354555;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;min-width:200px;appearance:auto}
+.date-filter-bar select:hover{border-color:#f59e0b}
+.date-filter-bar select:focus{outline:none;border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,0.2)}
+.date-filter-bar .reset-btn{background:transparent;color:#f59e0b;border:1px solid #f59e0b;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.date-filter-bar .reset-btn:hover{background:#f59e0b;color:#0f1923}
 .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;padding:24px 40px 0}
 .kpi-card{background:linear-gradient(135deg,#1a2a3a,#162232);border:1px solid #253545;border-radius:12px;padding:18px 20px;text-align:center;transition:transform .2s,box-shadow .2s}
 .kpi-card:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.3)}
 .kpi-card .kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:#7a8fa3;margin-bottom:8px}
 .kpi-card .kpi-value{font-size:22px;font-weight:700;color:#fff}
-.kpi-card .kpi-change{font-size:12px;margin-top:6px;font-weight:600}
+.kpi-card .kpi-change{font-size:12px;margin-top:6px;font-weight:600;position:relative;display:inline-block;cursor:help}
 .kpi-change.up{color:#22c55e}
 .kpi-change.down{color:#ef4444}
+.kpi-tooltip{visibility:hidden;opacity:0;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:#0d1b2a;color:#ccc;padding:10px 14px;border-radius:8px;font-size:11px;font-weight:400;white-space:nowrap;z-index:100;border:1px solid #354555;box-shadow:0 4px 15px rgba(0,0,0,.4);transition:opacity .2s,visibility .2s;pointer-events:none;text-transform:none;letter-spacing:0}
+.kpi-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#354555}
+.kpi-change:hover .kpi-tooltip{visibility:visible;opacity:1}
 .dashboard-container{padding:24px 40px 40px;display:flex;flex-direction:column;gap:28px}
 .section{background:linear-gradient(135deg,#1a2a3a 0%,#152232 100%);border:1px solid #253545;border-radius:16px;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.2)}
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
@@ -49,12 +59,18 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#0f1923;
 .stat-item{text-align:center}
 .stat-item .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7a8fa3}
 .stat-item .stat-value{font-size:18px;font-weight:700;color:#fff;margin-top:4px}
-@media(max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr)}.dashboard-header{flex-direction:column;gap:12px;text-align:center}.dashboard-container{padding:16px}}
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr)}.dashboard-header{flex-direction:column;gap:12px;text-align:center}.dashboard-container{padding:16px}.date-filter-bar{flex-direction:column;align-items:flex-start}}
 </style>
 </head>
 <body>
 <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text">Loading data from Google Sheets...</div></div>
 <div class="dashboard-header"><div><h1><span>Loader Parts Source</span> &mdash; Weekly Performance Dashboard</h1><div class="subtitle" id="dateSubtitle">Google Ads &amp; Call Tracking Analytics</div></div><div class="header-right"><button class="refresh-btn" onclick="loadData()">&#x21BB; Refresh Data</button><div class="header-badge">LIVE REPORT</div></div></div>
+<div class="date-filter-bar">
+<label>From:</label><select id="dateFrom" onchange="applyFilter()"></select>
+<label>To:</label><select id="dateTo" onchange="applyFilter()"></select>
+<button class="reset-btn" onclick="resetFilter()">Show All Weeks</button>
+<span id="filterInfo" style="color:#556677;font-size:12px;margin-left:auto"></span>
+</div>
 <div class="kpi-row">
 <div class="kpi-card"><div class="kpi-label">Total Impressions</div><div class="kpi-value" id="kpi-imp">--</div><div class="kpi-change" id="kpi-imp-ch"></div></div>
 <div class="kpi-card"><div class="kpi-label">Total Clicks</div><div class="kpi-value" id="kpi-clk">--</div><div class="kpi-change" id="kpi-clk-ch"></div></div>
@@ -71,6 +87,7 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#0f1923;
 <script>
 const CSV_URL='https://docs.google.com/spreadsheets/d/1UFpIQCQFzB8qT7u4exwlTAMxsJyq3uufqBLIURSutY4/gviz/tq?tqx=out:csv';
 let adsChart=null,callsChart=null,revenueChart=null;
+let allData=null;
 function parseCSV(csv){const lines=csv.trim().split('\n');const headers=parseCSVLine(lines[0]);const rows=[];for(let i=1;i<lines.length;i++){const vals=parseCSVLine(lines[i]);if(vals.length>=13&&vals[0].trim()!=='')rows.push(vals)}return{headers,rows}}
 function parseCSVLine(line){const result=[];let current='';let inQuotes=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(inQuotes&&i+1<line.length&&line[i+1]==='"'){current+='"';i++}else{inQuotes=!inQuotes}}else if(ch===','&&!inQuotes){result.push(current.trim());current=''}else{current+=ch}}result.push(current.trim());return result}
 function cleanNum(s){if(!s)return 0;return parseFloat(s.replace(/[,$%]/g,''))||0}
@@ -79,18 +96,73 @@ function fmt(n){return Math.round(n).toLocaleString('en-US')}
 function fmtMoney(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function sum(arr){return arr.reduce((a,b)=>a+b,0)}
 function avg(arr){return arr.length?sum(arr)/arr.length:0}
-function weekChange(arr){if(arr.length<2)return{val:'N/A',dir:'up'};const last=arr[arr.length-1],prev=arr[arr.length-2];if(prev===0)return{val:'100%',dir:'up'};const pct=((last-prev)/prev*100).toFixed(1);return{val:Math.abs(pct)+'%',dir:pct>=0?'up':'down'}}
-function setKPI(id,value,chId,arr){document.getElementById(id).textContent=value;const ch=weekChange(arr);const el=document.getElementById(chId);el.textContent=(ch.dir==='up'?'\u25B2':'\u25BC')+' '+ch.val+' WoW';el.className='kpi-change '+ch.dir}
+function weekChange(arr,dateLabels){
+if(arr.length<2)return{val:'N/A',dir:'up',current:'',previous:''};
+const last=arr[arr.length-1],prev=arr[arr.length-2];
+const currentWeek=dateLabels?dateLabels[dateLabels.length-1]:'';
+const previousWeek=dateLabels?dateLabels[dateLabels.length-2]:'';
+if(prev===0)return{val:'100%',dir:'up',current:currentWeek,previous:previousWeek};
+const pct=((last-prev)/prev*100).toFixed(1);
+return{val:Math.abs(pct)+'%',dir:pct>=0?'up':'down',current:currentWeek,previous:previousWeek}}
+function setKPI(id,value,chId,arr,dateLabels){
+document.getElementById(id).textContent=value;
+const ch=weekChange(arr,dateLabels);
+const el=document.getElementById(chId);
+const arrow=ch.dir==='up'?'\u25B2':'\u25BC';
+const tooltipText=ch.current&&ch.previous?'Week over Week change<br><strong>'+ch.current+'</strong> vs <strong>'+ch.previous+'</strong><br>'+arrow+' '+ch.val+' '+(ch.dir==='up'?'increase':'decrease'):'Not enough data to compare';
+el.innerHTML=arrow+' '+ch.val+' WoW <span class="kpi-tooltip">'+tooltipText+'</span>';
+el.className='kpi-change '+ch.dir}
 function createToggles(containerId,chart,metrics,colors){const container=document.getElementById(containerId);container.innerHTML='';metrics.forEach((m,i)=>{const btn=document.createElement('button');btn.className='toggle-btn active';btn.style.borderColor=colors[i];btn.innerHTML='<span class="dot" style="background:'+colors[i]+'"></span>'+m;btn.addEventListener('click',function(){this.classList.toggle('active');chart.setDatasetVisibility(i,this.classList.contains('active'));chart.update()});container.appendChild(btn)})}
 function populateStats(containerId,items){const container=document.getElementById(containerId);container.innerHTML='';items.forEach(item=>{const div=document.createElement('div');div.className='stat-item';div.innerHTML='<div class="stat-label">'+item.label+'</div><div class="stat-value">'+item.value+'</div>';container.appendChild(div)})}
+function populateDateDropdowns(fullDates){
+const fromSel=document.getElementById('dateFrom');
+const toSel=document.getElementById('dateTo');
+fromSel.innerHTML='';toSel.innerHTML='';
+fullDates.forEach((d,i)=>{
+const shortD=shortenDateRange(d);
+fromSel.innerHTML+='<option value="'+i+'">'+shortD+'</option>';
+toSel.innerHTML+='<option value="'+i+'">'+shortD+'</option>';
+});
+toSel.value=String(fullDates.length-1);
+fromSel.value='0';
+}
+function applyFilter(){
+if(!allData)return;
+const fromIdx=parseInt(document.getElementById('dateFrom').value);
+const toIdx=parseInt(document.getElementById('dateTo').value);
+if(fromIdx>toIdx){document.getElementById('filterInfo').textContent='\u26A0 "From" must be before "To"';return}
+const filtered={
+fullDates:allData.fullDates.slice(fromIdx,toIdx+1),
+labels:allData.labels.slice(fromIdx,toIdx+1),
+impressions:allData.impressions.slice(fromIdx,toIdx+1),
+clicks:allData.clicks.slice(fromIdx,toIdx+1),
+avgCPC:allData.avgCPC.slice(fromIdx,toIdx+1),
+ctmCalls:allData.ctmCalls.slice(fromIdx,toIdx+1),
+ctmQualCalls:allData.ctmQualCalls.slice(fromIdx,toIdx+1),
+callsRevenue:allData.callsRevenue.slice(fromIdx,toIdx+1),
+callsPotentialRev:allData.callsPotentialRev.slice(fromIdx,toIdx+1),
+googleAdsCost:allData.googleAdsCost.slice(fromIdx,toIdx+1),
+googleAdsPurchases:allData.googleAdsPurchases.slice(fromIdx,toIdx+1),
+googleTotalRevenue:allData.googleTotalRevenue.slice(fromIdx,toIdx+1),
+shopifyRevenue:allData.shopifyRevenue.slice(fromIdx,toIdx+1),
+gadsRoas:allData.gadsRoas.slice(fromIdx,toIdx+1)};
+const weeks=toIdx-fromIdx+1;
+document.getElementById('filterInfo').textContent='Showing '+weeks+' week'+(weeks!==1?'s':'')+' of '+allData.fullDates.length+' total';
+buildDashboard(filtered)}
+function resetFilter(){
+if(!allData)return;
+document.getElementById('dateFrom').value='0';
+document.getElementById('dateTo').value=String(allData.fullDates.length-1);
+document.getElementById('filterInfo').textContent='Showing all '+allData.fullDates.length+' weeks';
+buildDashboard(allData)}
 const tooltipBase={backgroundColor:'#1a2a3a',titleColor:'#fff',bodyColor:'#ccc',borderColor:'#f59e0b',borderWidth:1,padding:12,cornerRadius:8};
 function buildDashboard(d){
 const labels=d.labels;
-setKPI('kpi-imp',fmt(sum(d.impressions)),'kpi-imp-ch',d.impressions);
-setKPI('kpi-clk',fmt(sum(d.clicks)),'kpi-clk-ch',d.clicks);
-setKPI('kpi-spend',fmtMoney(sum(d.googleAdsCost)),'kpi-spend-ch',d.googleAdsCost);
-setKPI('kpi-rev',fmtMoney(sum(d.googleTotalRevenue)),'kpi-rev-ch',d.googleTotalRevenue);
-setKPI('kpi-shop',fmtMoney(sum(d.shopifyRevenue)),'kpi-shop-ch',d.shopifyRevenue);
+setKPI('kpi-imp',fmt(sum(d.impressions)),'kpi-imp-ch',d.impressions,d.labels);
+setKPI('kpi-clk',fmt(sum(d.clicks)),'kpi-clk-ch',d.clicks,d.labels);
+setKPI('kpi-spend',fmtMoney(sum(d.googleAdsCost)),'kpi-spend-ch',d.googleAdsCost,d.labels);
+setKPI('kpi-rev',fmtMoney(sum(d.googleTotalRevenue)),'kpi-rev-ch',d.googleTotalRevenue,d.labels);
+setKPI('kpi-shop',fmtMoney(sum(d.shopifyRevenue)),'kpi-shop-ch',d.shopifyRevenue,d.labels);
 if(labels.length>0){document.getElementById('dateSubtitle').innerHTML='Google Ads &amp; Call Tracking Analytics &bull; '+d.fullDates[0]+' \u2013 '+d.fullDates[d.fullDates.length-1].split(' - ')[1]}
 if(adsChart){adsChart.destroy();adsChart=null}
 if(callsChart){callsChart.destroy();callsChart=null}
@@ -104,7 +176,7 @@ populateStats('calls-stats',[{label:'Total Calls',value:fmt(sum(d.ctmCalls))},{l
 revenueChart=new Chart(document.getElementById('revenueChart'),{type:'bar',data:{labels:labels,datasets:[{label:'Google Ads Spend',data:d.googleAdsCost,backgroundColor:'#ef444460',borderColor:'#ef4444',borderWidth:2,borderRadius:4,yAxisID:'y',order:5},{label:'Google Ads Purchases',data:d.googleAdsPurchases,type:'line',borderColor:'#3b82f6',backgroundColor:'#3b82f620',borderWidth:3,pointRadius:5,pointHoverRadius:8,pointBackgroundColor:'#3b82f6',pointBorderColor:'#fff',pointBorderWidth:2,tension:.3,yAxisID:'y',order:3},{label:'Google Total Revenue',data:d.googleTotalRevenue,type:'line',borderColor:'#22c55e',backgroundColor:'#22c55e20',borderWidth:3,pointRadius:5,pointHoverRadius:8,pointBackgroundColor:'#22c55e',pointBorderColor:'#fff',pointBorderWidth:2,tension:.3,yAxisID:'y',order:2},{label:'Shopify Revenue',data:d.shopifyRevenue,type:'line',borderColor:'#a855f7',backgroundColor:'#a855f720',borderWidth:3,pointRadius:5,pointHoverRadius:8,pointBackgroundColor:'#a855f7',pointBorderColor:'#fff',pointBorderWidth:2,tension:.3,yAxisID:'y',order:1},{label:'ROAS',data:d.gadsRoas,type:'line',borderColor:'#f59e0b',backgroundColor:'#f59e0b20',borderWidth:3,pointRadius:6,pointHoverRadius:9,pointBackgroundColor:'#f59e0b',pointBorderColor:'#fff',pointBorderWidth:2,tension:.3,borderDash:[6,3],yAxisID:'y1',order:0}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{...tooltipBase,callbacks:{label:ctx=>ctx.dataset.label==='ROAS'?ctx.dataset.label+': '+ctx.parsed.y+'%':ctx.dataset.label+': '+fmtMoney(ctx.parsed.y)}}},scales:{x:{grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'#7a8fa3',font:{size:11}}},y:{type:'linear',position:'left',title:{display:true,text:'Revenue ($)',color:'#22c55e',font:{size:12,weight:'bold'}},grid:{color:'rgba(255,255,255,0.06)'},ticks:{color:'#22c55e',callback:v=>'$'+(v/1000).toFixed(0)+'K'}},y1:{type:'linear',position:'right',title:{display:true,text:'ROAS (%)',color:'#f59e0b',font:{size:12,weight:'bold'}},grid:{drawOnChartArea:false},ticks:{color:'#f59e0b',callback:v=>v+'%'}}}}});
 createToggles('toggles-revenue',revenueChart,['Google Ads Spend','Google Ads Purchases','Google Total Revenue','Shopify Revenue','ROAS'],['#ef4444','#3b82f6','#22c55e','#a855f7','#f59e0b']);
 populateStats('revenue-stats',[{label:'Total Ads Spend',value:fmtMoney(sum(d.googleAdsCost))},{label:'Total Ads Purchases',value:fmtMoney(sum(d.googleAdsPurchases))},{label:'Total Google Revenue',value:fmtMoney(sum(d.googleTotalRevenue))},{label:'Total Shopify Revenue',value:fmtMoney(sum(d.shopifyRevenue))},{label:'Avg ROAS',value:Math.round(avg(d.gadsRoas))+'%'}]);
-document.getElementById('lastUpdated').textContent='Last refreshed: '+new Date().toLocaleString()+' | Data pulled live from Google Sheets ('+labels.length+' weeks)';
+document.getElementById('lastUpdated').textContent='Last refreshed: '+new Date().toLocaleString()+' | Data pulled live from Google Sheets ('+labels.length+' weeks shown)';
 }
 function loadData(){
 document.getElementById('loadingOverlay').classList.remove('hidden');
@@ -112,6 +184,9 @@ fetch(CSV_URL).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text
 const parsed=parseCSV(csv);const rows=parsed.rows;
 const d={fullDates:[],labels:[],impressions:[],clicks:[],avgCPC:[],ctmCalls:[],ctmQualCalls:[],callsRevenue:[],callsPotentialRev:[],googleAdsCost:[],googleAdsPurchases:[],googleTotalRevenue:[],shopifyRevenue:[],gadsRoas:[]};
 rows.forEach(row=>{d.fullDates.push(row[0]);d.labels.push(shortenDateRange(row[0]));d.impressions.push(cleanNum(row[1]));d.clicks.push(cleanNum(row[2]));d.avgCPC.push(cleanNum(row[3]));d.ctmCalls.push(cleanNum(row[4]));d.ctmQualCalls.push(cleanNum(row[5]));d.callsRevenue.push(cleanNum(row[6]));d.callsPotentialRev.push(cleanNum(row[7]));d.googleAdsCost.push(cleanNum(row[8]));d.googleAdsPurchases.push(cleanNum(row[9]));d.googleTotalRevenue.push(cleanNum(row[10]));d.shopifyRevenue.push(cleanNum(row[11]));d.gadsRoas.push(cleanNum(row[12]))});
+allData=d;
+populateDateDropdowns(d.fullDates);
+document.getElementById('filterInfo').textContent='Showing all '+d.fullDates.length+' weeks';
 buildDashboard(d);document.getElementById('loadingOverlay').classList.add('hidden');
 }).catch(err=>{document.getElementById('loadingOverlay').classList.add('hidden');alert('Failed to load data: '+err.message)})}
 loadData();
