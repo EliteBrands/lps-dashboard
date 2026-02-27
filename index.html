@@ -54,7 +54,7 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#0f1923;
 .toggle-btn.active{color:#fff}
 .toggle-btn:not(.active){opacity:.4;border-color:#555!important}
 .toggle-btn:not(.active) .dot{background:#555!important}
-.chart-wrapper{position:relative;width:100%;height:320px}
+.chart-wrapper{position:relative;width:100%;height:320px;transition:height .3s ease}.chart-wrapper.expanded{height:640px}.expand-btn{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:2px solid #556677;background:transparent;color:#8899aa;font-size:12px;font-weight:600;cursor:pointer;transition:all .25s;user-select:none}.expand-btn:hover{border-color:#f59e0b;color:#f59e0b}.expand-btn.active{border-color:#f59e0b;color:#f59e0b}
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:20px;padding-top:20px;border-top:1px solid #253545}
 .stat-item{text-align:center}
 .stat-item .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7a8fa3}
@@ -79,9 +79,9 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#0f1923;
 <div class="kpi-card"><div class="kpi-label">Total Shopify Revenue</div><div class="kpi-value" id="kpi-shop">--</div><div class="kpi-change" id="kpi-shop-ch"></div></div>
 </div>
 <div class="dashboard-container">
-<div class="section"><div class="section-header"><div class="section-title"><div class="icon icon-ads">&#128202;</div>Google Ads Performance</div><div class="toggle-group" id="toggles-ads"></div></div><div class="chart-wrapper"><canvas id="adsChart"></canvas></div><div class="stats-row" id="ads-stats"></div></div>
-<div class="section"><div class="section-header"><div class="section-title"><div class="icon icon-calls">&#128222;</div>Call Tracking Performance</div><div class="toggle-group" id="toggles-calls"></div></div><div class="chart-wrapper"><canvas id="callsChart"></canvas></div><div class="stats-row" id="calls-stats"></div></div>
-<div class="section"><div class="section-header"><div class="section-title"><div class="icon icon-revenue">&#128176;</div>Revenue &amp; ROAS Overview</div><div class="toggle-group" id="toggles-revenue"></div></div><div class="chart-wrapper"><canvas id="revenueChart"></canvas></div><div class="stats-row" id="revenue-stats"></div></div>
+<div class="section"><div class="section-header"><div class="section-title"><div class="icon icon-ads">&#128202;</div>Google Ads Performance</div><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><div class="toggle-group" id="toggles-ads"></div><button class="expand-btn" onclick="toggleExpand(this,'adsChart','adsChartObj')">&#x2922; Expand</button></div></div><div class="chart-wrapper"><canvas id="adsChart"></canvas></div><div class="stats-row" id="ads-stats"></div></div>
+<div class="section"><div class="section-header"><div class="section-title"><div class="icon icon-calls">&#128222;</div>Call Tracking Performance</div><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><div class="toggle-group" id="toggles-calls"></div><button class="expand-btn" onclick="toggleExpand(this,'callsChart','callsChartObj')">&#x2922; Expand</button></div></div><div class="chart-wrapper"><canvas id="callsChart"></canvas></div><div class="stats-row" id="calls-stats"></div></div>
+<div class="section"><div class="section-header"><div class="section-title"><div class="icon icon-revenue">&#128176;</div>Revenue &amp; ROAS Overview</div><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><div class="toggle-group" id="toggles-revenue"></div><button class="expand-btn" onclick="toggleExpand(this,'revenueChart','revenueChartObj')">&#x2922; Expand</button></div></div><div class="chart-wrapper"><canvas id="revenueChart"></canvas></div><div class="stats-row" id="revenue-stats"></div></div>
 </div>
 <div class="last-updated" id="lastUpdated"></div>
 <script>
@@ -158,6 +158,7 @@ document.getElementById('dateTo').value=String(allData.fullDates.length-1);
 document.getElementById('filterInfo').textContent='Showing all '+allData.fullDates.length+' weeks';
 buildDashboard(allData)}
 const tooltipBase={backgroundColor:'#1a2a3a',titleColor:'#fff',bodyColor:'#ccc',borderColor:'#f59e0b',borderWidth:1,padding:12,cornerRadius:8};
+function toggleExpand(btn,canvasId,chartKey){var wrapper=document.getElementById(canvasId).parentElement;var isExpanded=wrapper.classList.toggle('expanded');btn.classList.toggle('active',isExpanded);btn.textContent=isExpanded?'\u2922 Collapse':'\u2922 Expand';var chartMap={adsChartObj:adsChart,callsChartObj:callsChart,revenueChartObj:revenueChart};var chart=chartMap[chartKey];if(chart){setTimeout(function(){chart.resize()},320)}}
 function buildDashboard(d){
 const labels=d.labels;
 setKPI('kpi-imp',fmt(sum(d.impressions)),'kpi-imp-ch',d.impressions,d.labels);
