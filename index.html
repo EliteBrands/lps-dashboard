@@ -168,7 +168,7 @@ document.getElementById('dateFrom').value='0';
 document.getElementById('dateTo').value=String(allData.fullDates.length-1);
 document.getElementById('filterInfo').textContent='Showing all '+allData.fullDates.length+' weeks';
 buildDashboard(allData)}
-const tooltipBase={backgroundColor:'#1a2a3a',titleColor:'#fff',bodyColor:'#ccc',borderColor:'#f59e0b',borderWidth:1,padding:12,cornerRadius:8};
+const tooltipBase={backgroundColor:'#1a2a3a',titleColor:'#fff',bodyColor:'#ccc',borderColor:'#f59e0b',borderWidth:1,padding:24,cornerRadius:10,titleFont:{size:24},bodyFont:{size:20},boxPadding:8,boxWidth:18,boxHeight:18};
 function toggleExpand(btn,canvasId,chartKey){var wrapper=document.getElementById(canvasId).parentElement;var isExpanded=wrapper.classList.toggle('expanded');btn.classList.toggle('active',isExpanded);btn.textContent=isExpanded?'\u2922 Collapse':'\u2922 Expand';var chartMap={adsChartObj:adsChart,callsChartObj:callsChart,revenueChartObj:revenueChart,metaChartObj:metaChart};var chart=chartMap[chartKey];if(chart){setTimeout(function(){chart.resize()},320)}}
 function buildDashboard(d){
 const labels=d.labels;
