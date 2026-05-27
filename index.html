@@ -158,7 +158,9 @@ metaAddToCarts:allData.metaAddToCarts.slice(fromIdx,toIdx+1),
 metaPurchases:allData.metaPurchases.slice(fromIdx,toIdx+1),
 metaValue:allData.metaValue.slice(fromIdx,toIdx+1),
 metaPageEngagement:allData.metaPageEngagement.slice(fromIdx,toIdx+1),
-metaRoas:allData.metaRoas.slice(fromIdx,toIdx+1)};
+metaRoas:allData.metaRoas.slice(fromIdx,toIdx+1),
+phoneCalls:allData.phoneCalls.slice(fromIdx,toIdx+1),
+phoneAnswered:allData.phoneAnswered.slice(fromIdx,toIdx+1)};
 const weeks=toIdx-fromIdx+1;
 document.getElementById('filterInfo').textContent='Showing '+weeks+' week'+(weeks!==1?'s':'')+' of '+allData.fullDates.length+' total';
 buildDashboard(filtered)}
