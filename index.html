@@ -55,7 +55,8 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#0f1923;
 .toggle-btn.active{color:#fff}
 .toggle-btn:not(.active){opacity:.4;border-color:#555!important}
 .toggle-btn:not(.active) .dot{background:#555!important}
-.chart-wrapper{position:relative;width:100%;height:320px;transition:height .3s ease}.chart-wrapper.expanded{height:640px}.expand-btn{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:2px solid #556677;background:transparent;color:#8899aa;font-size:12px;font-weight:600;cursor:pointer;transition:all .25s;user-select:none}.expand-btn:hover{border-color:#f59e0b;color:#f59e0b}.expand-btn.active{border-color:#f59e0b;color:#f59e0b}
+.chart-wrapper{position:relative;width:100%;height:320px;transition:height .3s ease}.chart-wrapper.expanded{height:640px}
+.chart-wrapper.expanded-2{height:960px}.expand-btn{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:2px solid #556677;background:transparent;color:#8899aa;font-size:12px;font-weight:600;cursor:pointer;transition:all .25s;user-select:none}.expand-btn:hover{border-color:#f59e0b;color:#f59e0b}.expand-btn.active{border-color:#f59e0b;color:#f59e0b}
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:20px;padding-top:20px;border-top:1px solid #253545}
 .stat-item{text-align:center}
 .stat-item .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7a8fa3}
@@ -175,7 +176,9 @@ document.getElementById('dateTo').value=String(allData.fullDates.length-1);
 document.getElementById('filterInfo').textContent='Showing all '+allData.fullDates.length+' weeks';
 buildDashboard(allData)}
 const tooltipBase={backgroundColor:'#1a2a3a',titleColor:'#fff',bodyColor:'#ccc',borderColor:'#f59e0b',borderWidth:1,padding:24,cornerRadius:10,titleFont:{size:24},bodyFont:{size:20},boxPadding:8,boxWidth:18,boxHeight:18};
-function toggleExpand(btn,canvasId,chartKey){var wrapper=document.getElementById(canvasId).parentElement;var isExpanded=wrapper.classList.toggle('expanded');btn.classList.toggle('active',isExpanded);btn.textContent=isExpanded?'\u2922 Collapse':'\u2922 Expand';var chartMap={adsChartObj:adsChart,callsChartObj:callsChart,revenueChartObj:revenueChart,metaChartObj:metaChart};var chart=chartMap[chartKey];if(chart){setTimeout(function(){chart.resize()},320)}}
+/* Three-state expand: 320px -> 640px -> 960px -> back. Button always names the NEXT action. */
+function expandStep(wrapper,btn){var s=wrapper.classList.contains('expanded-2')?2:(wrapper.classList.contains('expanded')?1:0);var n=(s+1)%3;wrapper.classList.remove('expanded','expanded-2');if(n===1)wrapper.classList.add('expanded');else if(n===2)wrapper.classList.add('expanded-2');btn.classList.toggle('active',n>0);btn.textContent=n===0?'\u2922 Expand':(n===1?'\u2922 Expand More':'\u2922 Collapse');}
+function toggleExpand(btn,canvasId,chartKey){var wrapper=document.getElementById(canvasId).parentElement;expandStep(wrapper,btn);var chartMap={adsChartObj:adsChart,callsChartObj:callsChart,revenueChartObj:revenueChart,metaChartObj:metaChart};var chart=chartMap[chartKey];if(chart){setTimeout(function(){chart.resize()},320)}}
 function buildDashboard(d){
 const labels=d.labels;
 setKPI('kpi-imp',fmt(sum(d.impressions)),'kpi-imp-ch',d.impressions,d.labels);
